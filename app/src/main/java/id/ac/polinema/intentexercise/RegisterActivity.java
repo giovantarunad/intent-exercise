@@ -4,130 +4,130 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.mobsandgeeks.saripaar.ValidationError;
 import com.mobsandgeeks.saripaar.Validator;
 import com.mobsandgeeks.saripaar.annotation.ConfirmPassword;
+import com.mobsandgeeks.saripaar.annotation.Domain;
 import com.mobsandgeeks.saripaar.annotation.Email;
 import com.mobsandgeeks.saripaar.annotation.NotEmpty;
 import com.mobsandgeeks.saripaar.annotation.Password;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 import model.user;
 
-public class RegisterActivity extends AppCompatActivity implements
-        Validator.ValidationListener,
-        View.OnClickListener {
+public class RegisterActivity extends AppCompatActivity  implements Validator.ValidationListener {
 
-    private static final String TAG = RegisterActivity.class.getName();
+    public static final String USER_KEY = "USER_KEY";
+    Bitmap bitmap; // store the image in your bitmap
     private static final int GALLERY_REQUEST_CODE = 1;
-
-    private Validator validator;
-    private Uri imgUri;
-
+    private static final String TAG = RegisterActivity.class.getCanonicalName();
     @NotEmpty
-    private EditText Fullname;
-
-    @NotEmpty
+    private TextInputEditText fullnameInput;
     @Email
-    private EditText Email;
-
-    @NotEmpty
-    @Password(min = 8, scheme = Password.Scheme.ALPHA_NUMERIC_MIXED_CASE_SYMBOLS)
-    private EditText editPassword;
-
-    @NotEmpty
+    private TextInputEditText emailInput;
+    @Password
+    private TextInputEditText passwordInput;
     @ConfirmPassword
-    private EditText ConfirmPassword;
-
-    @NotEmpty
-    private EditText Homepage;
-
-    @NotEmpty
-    private EditText About;
+    private TextInputEditText confirmPassword;
+    @Domain
+    private TextInputEditText homepageInput;
+    private TextInputEditText aboutInput;
+    private ImageView image_profile;
+    Validator validator;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
-
-        Fullname = findViewById(R.id.text_fullname);
-        Email = findViewById(R.id.text_email);
-        editPassword = findViewById(R.id.text_password);
-        ConfirmPassword = findViewById(R.id.text_confirm_password);
-        Homepage = findViewById(R.id.text_homepage);
-        About = findViewById(R.id.text_about);
-
-        findViewById(R.id.imageView).setOnClickListener(this);
-        findViewById(R.id.button_ok).setOnClickListener(this);
+        fullnameInput = findViewById(R.id.text_fullname);
+        emailInput = findViewById(R.id.text_email);
+        passwordInput = findViewById(R.id.text_password);
+        confirmPassword = findViewById(R.id.text_confirm_password);
+        homepageInput = findViewById(R.id.text_homepage);
+        aboutInput = findViewById(R.id.text_about);
+        image_profile = findViewById(R.id.image_profile);
 
         validator = new Validator(this);
         validator.setValidationListener(this);
     }
 
-    @Override
-    public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.imageView :
-                Intent intent = new Intent(Intent.ACTION_PICK,
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                startActivityForResult(intent, GALLERY_REQUEST_CODE);
-                break;
+    public void handleoke(View view) {
+        validator.validate();
+    }
 
-            case R.id.button_ok :
-                validator.validate();
-                break;
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (resultCode == RESULT_CANCELED) {
+            return;
         }
+
+        if (requestCode == GALLERY_REQUEST_CODE) {
+            if (data != null) {
+                try {
+                    Uri imageUri = data.getData();
+                    bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
+
+                    image_profile.setImageBitmap(bitmap);
+                } catch (IOException e) {
+                    Toast.makeText(this, "Can't load image", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, e.getMessage());
+                }
+            }
+        }
+    }
+
+    public void handleedit(View view) {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        startActivityForResult(intent, GALLERY_REQUEST_CODE);
     }
 
     @Override
     public void onValidationSucceeded() {
-        String fullname = Fullname.getText().toString();
-        String email = Email.getText().toString();
-        String password = editPassword.getText().toString();
-        String homepage = Homepage.getText().toString();
-        String about = About.getText().toString();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 50, baos);
 
-        user user = new user(fullname, email, password, homepage, about, imgUri);
         Intent intent = new Intent(this, ProfileActivity.class);
-        intent.putExtra(ProfileActivity.USER_KEY, user);
-
+        intent.putExtra(USER_KEY, new user(fullnameInput.getText().toString(),
+                emailInput.getText().toString(),
+                passwordInput.getText().toString(),
+                homepageInput.getText().toString(),
+                aboutInput.getText().toString()));
+        intent.putExtra("profileImage", baos.toByteArray());
         startActivity(intent);
+
     }
 
     @Override
     public void onValidationFailed(List<ValidationError> errors) {
         for (ValidationError error : errors) {
             View view = error.getView();
+            String message = error.getCollatedErrorMessage(this);
 
-            String message = "";
-
+            // Display error messages ;)
             if (view instanceof EditText) {
-                EditText edt = (EditText) view;
-                message = edt.getHint().toString() + " ";
-                edt.setError(error.getCollatedErrorMessage(this));
+                ((EditText) view).setError(message);
+            } else {
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show();
             }
+        }
 
-            message += error.getCollatedErrorMessage(this);
-            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
-        }
-    }
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_CANCELED) return;
-        if (requestCode == GALLERY_REQUEST_CODE) {
-            if (data != null) {
-                imgUri = data.getData();
-            }
-        }
     }
 }

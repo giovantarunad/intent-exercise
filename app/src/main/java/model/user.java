@@ -1,54 +1,57 @@
 package model;
 
-import android.net.Uri;
+import android.graphics.Bitmap;
+import android.media.Image;
 import android.os.Parcel;
 import android.os.Parcelable;
 
 public class user implements Parcelable {
-
-    private String fullname;
+    private String fullName;
     private String email;
     private String password;
     private String homepage;
     private String about;
-    private Uri imageUri;
+    private Bitmap profileImage;
 
-    public user(String fullname, String email, String password, String homepage, String about, Uri imageUri)
-    {
-        this.fullname = fullname;
+    //, Image profileImage
+    public user(String fullName, String email, String password, String homepage, String about) {
+        this.fullName = fullName;
         this.email = email;
         this.password = password;
         this.homepage = homepage;
         this.about = about;
-        this.imageUri = imageUri;
+        //this.profileImage = profileImage;
     }
 
-    public String getFullname() {
-        return fullname;
+    public Bitmap getProfileImage() {
+        return profileImage;
     }
 
-    public void setFullname(String fullname) {
+    public void setImageBitmap(Bitmap profileImage) {
+        this.profileImage = profileImage;
+    }
 
-        this.fullname = fullname;
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 
     public String getEmail() {
-
         return email;
     }
 
     public void setEmail(String email) {
-
         this.email = email;
     }
 
     public String getPassword() {
-
         return password;
     }
 
     public void setPassword(String password) {
-
         this.password = password;
     }
 
@@ -57,50 +60,27 @@ public class user implements Parcelable {
     }
 
     public void setHomepage(String homepage) {
-
         this.homepage = homepage;
     }
 
     public String getAbout() {
-
         return about;
     }
 
     public void setAbout(String about) {
-
         this.about = about;
     }
 
-    public Uri getImageUri() {
-        return imageUri;
+    public static Creator<user> getCREATOR() {
+        return CREATOR;
     }
 
-    public void setImageUri(Uri imageUri) {
-        this.imageUri = imageUri;
-    }
-
-    @Override
-    public int describeContents() {
-
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(this.fullname);
-        dest.writeString(this.email);
-        dest.writeString(this.password);
-        dest.writeString(this.homepage);
-        dest.writeString(this.about);
-        dest.writeParcelable(this.imageUri,flags);
-    }
-    protected user(Parcel in) {
-        this.fullname = in.readString();
-        this.email = in.readString();
-        this.password = in.readString();
-        this.homepage = in.readString();
-        this.about = in.readString();
-        this.imageUri = in.readParcelable(Uri.class.getClassLoader());
+    public user(Parcel in) {
+        fullName = in.readString();
+        email = in.readString();
+        password = in.readString();
+        homepage = in.readString();
+        about = in.readString();
     }
 
     public static final Creator<user> CREATOR = new Creator<user>() {
@@ -114,4 +94,18 @@ public class user implements Parcelable {
             return new user[size];
         }
     };
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel parcel, int i) {
+        parcel.writeString(fullName);
+        parcel.writeString(email);
+        parcel.writeString(password);
+        parcel.writeString(homepage);
+        parcel.writeString(about);
+    }
 }
